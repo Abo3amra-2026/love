@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>شجرة حبنا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg-deep:#130b17;
+  --bg-2:#1d1120;
+  --bg-3:#241629;
+  --gold:#cda86a;
+  --gold-bright:#f0d9a8;
+  --rose:#c98098;
+  --rose-deep:#9c4f66;
+  --cream:#f4ecdf;
+  --line: rgba(244,236,223,0.14);
+  --leaf1:#8fae7a;
+  --leaf2:#b7935b;
+  --leaf3:#c98098;
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{
+  margin:0; padding:0; width:100%; height:100%;
+  background: radial-gradient(120% 130% at 50% -10%, #29182e 0%, var(--bg-deep) 55%, #0b060d 100%);
+  color:var(--cream);
+  font-family:'Cairo',sans-serif;
+  overflow:hidden;
+}
+.screen{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px;
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition: opacity .6s ease;
+}
+.screen.active{ opacity:1; visibility:visible; pointer-events:auto; }
+.screen.scroll{ overflow-y:auto; -webkit-overflow-scrolling:touch; display:block; padding-top:56px; }
+
+h1,h2,h3{ font-family:'Amiri',serif; margin:0; }
+.eyebrow{ font-size:13px; letter-spacing:.06em; color:var(--rose); opacity:.85; margin-bottom:8px; }
+.hairline{ width:64px; height:1px; background:linear-gradient(90deg, transparent, var(--gold), transparent); margin:18px auto; opacity:.6; }
+.ltr{ direction:ltr; unicode-bidi:isolate; }
+
+
+/* ---------- password screen ---------- */
+.pw-card{ width:min(88vw,340px); text-align:center; position:relative; z-index:3; }
+.pw-card h2{ font-size:clamp(20px,4.5vw,26px); }
+.pw-card p.hint{ font-size:13px; color:rgba(244,236,223,.5); margin-top:10px; }
+.pw-field{ margin-top:30px; position:relative; }
+.pw-field input{
+  width:100%; background:transparent; border:none; border-bottom:1px solid var(--line);
+  color:var(--cream); font-family:'Cairo',sans-serif; font-size:18px; text-align:center;
+  padding:10px 6px; outline:none; letter-spacing:.06em; direction:ltr;
+}
+.pw-field input:focus{ border-color:var(--gold); }
+.pw-field input::placeholder{ color:rgba(244,236,223,.3); font-size:14px; }
+.pw-btn{
+  margin-top:26px; background:linear-gradient(135deg, var(--gold), var(--rose-deep));
+  border:none; color:#170f19; font-weight:700; font-family:'Cairo',sans-serif;
+  padding:12px 34px; border-radius:999px; cursor:pointer; font-size:14px;
+  box-shadow:0 8px 24px rgba(205,168,106,.18);
+  transition:transform .15s ease;
+}
+.pw-btn:active{ transform:scale(.96); }
+.pw-error{ margin-top:16px; font-size:13px; color:#e28fa0; min-height:16px; opacity:0; transition:opacity .3s; }
+.pw-error.show{ opacity:1; }
+.shake{ animation:shake .4s; }
+@keyframes shake{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(7px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(4px);} }
+
+/* ---------- ambient fx: stars / hearts / glow (password screen) ---------- */
+.pw-ambient{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+.glow-orb{ position:absolute; border-radius:50%; filter:blur(46px); animation:orbDrift ease-in-out infinite; }
+@keyframes orbDrift{ 0%,100%{ transform:translate(0,0) scale(1); } 50%{ transform:translate(18px,-16px) scale(1.18); } }
+.pw-star{ position:absolute; width:2px; height:2px; border-radius:50%; background:var(--gold-bright); box-shadow:0 0 5px 1px rgba(240,217,168,.85); animation:twinkle ease-in-out infinite; }
+@keyframes twinkle{ 0%,100%{ opacity:.12; } 50%{ opacity:1; } }
+.pw-heart{ position:absolute; bottom:-24px; width:var(--hw,14px); height:calc(var(--hw,14px)*.85); animation:heartFloat linear infinite; }
+.pw-heart::before,.pw-heart::after{
+  content:''; position:absolute; top:0; left:calc(var(--hw,14px)/2);
+  width:calc(var(--hw,14px)/2); height:calc(var(--hw,14px)*.78);
+  background:var(--rose); border-radius:50% 50% 0 0; transform-origin:0 100%; transform:rotate(-45deg);
+  box-shadow:0 0 6px rgba(201,128,152,.55);
+}
+.pw-heart::after{ left:0; transform-origin:100% 100%; transform:rotate(45deg); }
+@keyframes heartFloat{
+  0%{ transform:translateY(0) rotate(0deg); opacity:0; }
+  10%{ opacity:.85; }
+  85%{ opacity:.55; }
+  100%{ transform:translateY(-70vh) rotate(14deg); opacity:0; }
+}
+
+/* ---------- tree screen ---------- */
+#treeScreen .inner{ display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; }
+#treeScreen h2{ font-size:clamp(24px,5.5vw,34px); }
+#treeScreen .sub{ font-size:13px; color:rgba(244,236,223,.5); margin-top:4px; }
+.tree-wrap{ width:min(88vw,380px); margin-top:6px; }
+.tree-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+.branch{ fill:none; stroke:url(#trunkGrad); stroke-linecap:round; }
+.counter-row{
+  display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  margin-top:8px; max-width:420px;
+}
+.counter-unit{
+  background:rgba(244,236,223,.04); border:1px solid var(--line);
+  border-radius:12px; padding:10px 12px; min-width:56px;
+}
+.counter-unit .num{ font-family:'Amiri',serif; font-size:20px; color:var(--gold-bright); direction:ltr; display:block; }
+.counter-unit .lbl{ font-size:10px; color:rgba(244,236,223,.5); margin-top:2px; display:block; }
+.open-btn{
+  margin-top:30px; background:none; border:1px solid var(--gold);
+  color:var(--gold-bright); font-family:'Cairo',sans-serif; font-weight:600;
+  padding:13px 30px; border-radius:999px; cursor:pointer; font-size:14px; letter-spacing:.02em;
+  position:relative; overflow:hidden;
+  animation:pulseGlow 2.6s ease-in-out infinite;
+}
+@keyframes pulseGlow{
+  0%,100%{ box-shadow:0 0 0 rgba(240,217,168,0); }
+  50%{ box-shadow:0 0 22px rgba(240,217,168,.28); }
+}
+
+/* ---------- rose transition ---------- */
+.rose-half{
+  position:fixed; top:0; width:50vw; height:100vh; z-index:60;
+  background-attachment:fixed; background-repeat:no-repeat; background-size:100vw 100vh;
+  transition:transform .95s cubic-bezier(.65,0,.35,1);
+  filter:brightness(1);
+  animation:roseBreathe 1.6s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes roseBreathe{ 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.12);} }
+#roseLeft{ left:0; }
+#roseRight{ right:0; }
+.rose-half.split-left{ transform:translateX(-100%); }
+.rose-half.split-right{ transform:translateX(100%); }
+.rose-fill{
+  position:fixed; inset:0; z-index:59;
+  background-attachment:fixed; background-repeat:no-repeat; background-size:100vw 100vh;
+  opacity:0; transition:opacity 1.7s ease;
+  pointer-events:none;
+}
+.rose-fill.show{ opacity:1; }
+
+/* ---------- gallery screen ---------- */
+#gallery{ padding-bottom:60px; }
+.g-header{ text-align:center; margin-bottom:26px; }
+.g-header h2{ font-size:clamp(22px,5vw,30px); }
+.clock{ position:fixed; top:14px; left:16px; font-size:11px; color:rgba(244,236,223,.4); direction:ltr; z-index:5; }
+.back-btn{
+  position:fixed; top:10px; right:16px; z-index:6;
+  width:38px; height:38px; border-radius:50%; border:1px solid var(--line);
+  background:rgba(19,11,23,.55); backdrop-filter:blur(6px);
+  color:var(--gold-bright); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:background .2s ease, border-color .2s ease, transform .15s ease;
+}
+.back-btn:hover{ border-color:var(--gold); background:rgba(36,22,41,.75); }
+.back-btn:active{ transform:scale(.9); }
+.back-btn svg{ width:18px; height:18px; }
+
+.song-card{
+  width:min(90vw,360px); margin:0 auto 34px; display:flex; align-items:center; gap:16px;
+  background:linear-gradient(135deg, rgba(244,236,223,.06), rgba(244,236,223,.02));
+  border:1px solid var(--line); border-radius:20px; padding:16px 20px;
+  position:relative; overflow:hidden;
+  transition: border-color .5s ease, box-shadow .5s ease;
+}
+.song-card::before{
+  content:''; position:absolute; inset:-60% -10%; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 25%, rgba(201,128,152,.22), transparent 55%),
+    radial-gradient(circle at 85% 75%, rgba(205,168,106,.22), transparent 55%);
+  opacity:.7; transition:opacity .6s ease;
+}
+.song-card.playing{ border-color:rgba(205,168,106,.55); box-shadow:0 0 26px rgba(205,168,106,.16); }
+.song-card.playing::before{ opacity:1; }
+.song-info, .song-btn, .eq{ position:relative; z-index:1; }
+
+/* ---- vinyl-record play button ---- */
+.song-btn{
+  width:58px; height:58px; border-radius:50%; border:none; padding:0;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  position:relative;
+  background: repeating-radial-gradient(circle at center, #0b0b0d 0 3px, #1c1c20 3px 6px);
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.5),
+    inset 0 0 0 2px rgba(205,168,106,.5),
+    inset 0 0 10px rgba(0,0,0,.6);
+  transition: box-shadow .4s ease, transform .2s ease;
+}
+.song-btn::before{
+  content:''; position:absolute; inset:16px; border-radius:50%;
+  background: conic-gradient(from 200deg, var(--gold-bright), var(--rose), var(--rose-deep), var(--gold), var(--gold-bright));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 0 12px rgba(240,217,168,.4);
+}
+.song-btn::after{
+  content:''; position:absolute; inset:26px; border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #2a1c10, #150d07 75%);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.15);
+}
+.song-btn:active{ transform:scale(.94); }
+.song-btn .play-ico{
+  position:relative; z-index:2; width:0; height:0;
+  border-top:7px solid transparent; border-bottom:7px solid transparent;
+  border-left:12px solid var(--gold-bright); margin-right:-2px;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));
+}
+.song-btn .pause-ico{ position:relative; z-index:2; display:none; gap:3px; }
+.song-btn .pause-ico span{ width:3px; height:13px; border-radius:1px; background:var(--gold-bright); display:block; box-shadow:0 1px 2px rgba(0,0,0,.5); }
+.song-btn.playing .play-ico{ display:none; }
+.song-btn.playing .pause-ico{ display:flex; }
+.song-btn.playing{
+  animation: vinylSpin 3.4s linear infinite;
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.55),
+    inset 0 0 0 2px var(--gold-bright),
+    0 0 24px rgba(240,217,168,.4);
+}
+@keyframes vinylSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+
+.song-info{ text-align:right; flex:1; }
+.song-info .t1{ font-size:13px; font-weight:600; }
+.song-info .t2{ font-size:11px; color:rgba(244,236,223,.5); margin-top:2px; }
+.eq{ display:flex; align-items:flex-end; gap:3px; height:15px; margin-inline-start:4px; }
+.eq span{ width:3px; border-radius:2px; animation:eqBar .9s ease-in-out infinite; }
+.eq span:nth-child(1){ background:linear-gradient(180deg, var(--gold-bright), var(--gold)); }
+.eq span:nth-child(2){ background:linear-gradient(180deg, var(--rose), var(--rose-deep)); animation-delay:.15s; }
+.eq span:nth-child(3){ background:linear-gradient(180deg, var(--gold), var(--rose)); animation-delay:.3s; }
+@keyframes eqBar{ 0%,100%{ height:3px; } 50%{ height:14px; } }
+
+.frames-grid{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:16px;
+  width:min(92vw,460px); margin:0 auto; perspective:900px;
+}
+@media(min-width:520px){ .frames-grid{ grid-template-columns:repeat(3,1fr); } }
+.frame{
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.32) 0 2px, rgba(0,0,0,.1) 2px 4px),
+    linear-gradient(155deg, #f4e3ba 0%, #d9b877 20%, #8a6a3f 45%, #caa568 62%, #f0d9a8 80%, #b98f52 100%);
+  border-radius:7px; padding:9px 9px 22px;
+  box-shadow:
+    0 12px 26px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,248,225,.5),
+    inset 0 2px 4px rgba(255,255,255,.4),
+    inset 0 -4px 8px rgba(40,25,10,.5);
+  cursor:pointer; transition:transform .18s ease, box-shadow .18s ease;
+  display:flex; flex-direction:column; align-items:center;
+  position:relative; transform-style:preserve-3d;
+}
+.frame:nth-child(odd){ transform:rotate(-2deg); }
+.frame:nth-child(even){ transform:rotate(2deg); }
+.frame:hover{ box-shadow:0 20px 34px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,248,225,.5), inset 0 2px 4px rgba(255,255,255,.4), inset 0 -4px 8px rgba(40,25,10,.5); }
+.del-frame{
+  position:absolute; top:-8px; inset-inline-end:-8px; z-index:4;
+  width:26px; height:26px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#3a1c1c,#200d0d); color:var(--rose);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 10px rgba(0,0,0,.5), inset 0 0 0 1px rgba(240,217,168,.3);
+  opacity:0; transform:scale(.7); transition:opacity .2s ease, transform .2s ease, background .2s ease;
+}
+.frame:hover .del-frame{ opacity:1; transform:scale(1); }
+.del-frame:hover{ background:linear-gradient(135deg,#5a1f1f,#2c0f0f); color:#ffb3c0; }
+.del-frame svg{ width:13px; height:13px; }
+.frame .photo{
+  width:100%; aspect-ratio:1/1;
+  background:linear-gradient(135deg,#efe6d3,#e2d3b3);
+  border-radius:3px; padding:8%;
+  display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.22), inset 0 0 0 1px rgba(0,0,0,.08);
+}
+.frame .photo .inner{
+  width:100%; height:100%; border-radius:2px; overflow:hidden; position:relative;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 35% 30%, #2c2013, #170f08 80%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+}
+.frame .photo img{ width:100%; height:100%; object-fit:cover; display:block; }
+.frame .photo::after{
+  content:'+'; position:absolute; bottom:5px; inset-inline-end:5px;
+  width:20px; height:20px; border-radius:50%; z-index:2;
+  background:var(--gold-bright); color:#241609; font-size:14px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+  opacity:0; transform:scale(.7); transition:opacity .2s ease, transform .2s ease;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.frame:hover .photo::after{ opacity:1; transform:scale(1); }
+.photo.has-photo::after{ display:none; }
+.clear-photo{
+  position:absolute; top:6px; inset-inline-start:6px; z-index:3;
+  width:22px; height:22px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(20,14,8,.75); color:var(--gold-bright); font-size:14px; line-height:1;
+  display:none; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .2s ease, background .2s ease;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.photo.has-photo .clear-photo{ display:flex; }
+.frame:hover .photo.has-photo .clear-photo{ opacity:1; }
+.clear-photo:hover{ background:rgba(156,79,102,.85); color:#fff; }
+.frame-icon{
+  width:38%; height:38%; color:var(--gold-bright); opacity:.55;
+  filter:drop-shadow(0 0 6px rgba(240,217,168,.35));
+  animation: iconFloat 4s ease-in-out infinite;
+}
+@keyframes iconFloat{ 0%,100%{ transform:translateY(0); opacity:.5; } 50%{ transform:translateY(-3px); opacity:.8; } }
+.frame:hover .frame-icon{ color:var(--rose); opacity:.85; }
+.frame input[type=text]{
+  margin-top:9px; border:none; background:none; text-align:center; color:#3a2c1e;
+  font-family:'Cairo',sans-serif; font-size:11px; width:100%; outline:none;
+}
+.add-frame{
+  display:block; margin:22px auto 0; background:none; border:1px dashed var(--line);
+  color:rgba(244,236,223,.6); font-family:'Cairo',sans-serif; font-size:13px;
+  padding:10px 22px; border-radius:999px; cursor:pointer;
+}
+.add-frame:hover{ border-color:var(--gold); color:var(--gold-bright); }
+
+.bday-row{
+  display:flex; flex-wrap:wrap; gap:16px; justify-content:center;
+  width:min(92vw,460px); margin:44px auto 0;
+}
+.bday-card{
+  flex:1; min-width:190px; background:rgba(244,236,223,.04); border:1px solid var(--line);
+  border-radius:16px; padding:18px; text-align:center;
+}
+.bday-card .who{ font-size:13px; color:var(--rose); margin-bottom:4px; }
+.bday-card .date{ font-family:'Amiri',serif; font-size:17px; margin-bottom:12px; }
+.bday-card .cd{ display:flex; gap:8px; justify-content:center; direction:ltr; }
+.bday-card .cd div{ text-align:center; }
+.bday-card .cd .n{ font-size:16px; color:var(--gold-bright); font-family:'Amiri',serif; display:block; }
+.bday-card .cd .l{ font-size:9px; color:rgba(244,236,223,.45); display:block; }
+.bday-card .turn{ font-size:11px; color:rgba(244,236,223,.4); margin-top:10px; }
+
+::-webkit-scrollbar{ width:6px; }
+::-webkit-scrollbar-thumb{ background:rgba(244,236,223,.15); border-radius:3px; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="icon-heart" viewBox="0 0 24 24">
+      <path d="M12 20.5c-.3 0-.6-.1-.8-.3C7.8 17.6 3 13.8 3 9.6 3 6.9 5.1 4.8 7.7 4.8c1.5 0 2.9.7 3.8 1.9.2.3.7.3.9 0 .9-1.2 2.3-1.9 3.8-1.9C18.9 4.8 21 6.9 21 9.6c0 4.2-4.8 8-8.2 10.6-.2.2-.5.3-.8.3z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-flower" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <ellipse cx="12" cy="6.2" rx="2.5" ry="4.3"/>
+        <ellipse cx="12" cy="6.2" rx="2.5" ry="4.3" transform="rotate(72 12 12)"/>
+        <ellipse cx="12" cy="6.2" rx="2.5" ry="4.3" transform="rotate(144 12 12)"/>
+        <ellipse cx="12" cy="6.2" rx="2.5" ry="4.3" transform="rotate(216 12 12)"/>
+        <ellipse cx="12" cy="6.2" rx="2.5" ry="4.3" transform="rotate(288 12 12)"/>
+      </g>
+      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24">
+      <path d="M15.5 4.5c-4 .6-7 4-7 8.1 0 4.5 3.7 8.2 8.2 8.2 1.9 0 3.6-.6 5-1.7-1 .3-2 .5-3.1.5-4.5 0-8.2-3.7-8.2-8.2 0-2.8 1.4-5.3 3.6-6.8-.2 0-.3-.1-.5-.1z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M18.5 3.5l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-ribbon" viewBox="0 0 24 24">
+      <path d="M12 12c-2.3-2.6-5-3.6-6.8-2.6-1.6.9-1.6 3 0 4.4 1.8 1.6 4.7 1 6.8-1.8z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M12 12c2.3-2.6 5-3.6 6.8-2.6 1.6.9 1.6 3 0 4.4-1.8 1.6-4.7 1-6.8-1.8z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+      <path d="M12 13.2c-.3 2-1 4.3-2.2 6.3M12 13.2c.3 2 1 4.3 2.2 6.3" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-feather" viewBox="0 0 24 24">
+      <path d="M19 4c-6 0-13 5-13 13v2.2l3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M19 4c0 6-5 13-13 13" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9.5 13.5l3-3M8 15.8l3-3M11 11l3-3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-rings" viewBox="0 0 24 24">
+      <circle cx="9" cy="12.5" r="5" fill="none" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="15" cy="12.5" r="5" fill="none" stroke="currentColor" stroke-width="1.3"/>
+    </symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+      <path d="M4 7h16M9 7V4.8c0-.4.3-.8.8-.8h4.4c.5 0 .8.4.8.8V7M6 7l1 13.2c0 .5.4.8.9.8h8.2c.5 0 .9-.3.9-.8L18 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24">
+      <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ================= SCREEN 1: PASSWORD ================= -->
+<div class="screen active" id="pwScreen">
+  <div class="pw-ambient" id="pwAmbient"></div>
+  <div class="pw-card">
+    <div class="eyebrow">قبل ما تدخلي</div>
+    <h2>إيه هو تاريخ أول يوم بيننا؟</h2>
+    <p class="hint">اكتبيه بالشكل ده: يوم/شهر/سنة</p>
+    <div class="pw-field">
+      <input type="text" id="pwInput" placeholder="مثال: 1/1/2020" autocomplete="off" autofocus>
+    </div>
+    <div class="pw-error" id="pwError">مش هو ده يا حبيبتي، جربي تاني</div>
+    <button class="pw-btn" id="pwBtn">دخول</button>
+  </div>
+</div>
+
+<!-- ================= SCREEN 3: TREE ================= -->
+<div class="screen" id="treeScreen">
+  <div class="inner">
+    <div class="eyebrow">من يوم 6 سبتمبر 2026</div>
+    <h2>شجرة حبنا</h2>
+    <div class="sub">كل يوم بيعدي بيبقى ورقة، وكل سنة بتبقى وردة</div>
+    <div class="tree-wrap">
+      <svg viewBox="0 0 480 600" id="treeSvg">
+        <defs>
+          <linearGradient id="trunkGrad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#8a6a3f"/>
+            <stop offset="100%" stop-color="#cda86a"/>
+          </linearGradient>
+          <symbol id="leafShape" viewBox="-7 -10 14 20">
+            <path d="M0,-9 C4,-9 6,-4 6,0 C6,5 3,8 0,9 C-3,8 -6,5 -6,0 C-6,-4 -4,-9 0,-9 Z"/>
+          </symbol>
+          <symbol id="roseShape" viewBox="-11 -11 22 22">
+            <circle cx="0" cy="-5" r="5.2" fill="var(--rose-deep)" fill-opacity=".92"/>
+            <circle cx="4.8" cy="-1.5" r="5.2" fill="var(--rose-deep)" fill-opacity=".92"/>
+            <circle cx="3" cy="4.2" r="5.2" fill="var(--rose-deep)" fill-opacity=".92"/>
+            <circle cx="-3" cy="4.2" r="5.2" fill="var(--rose-deep)" fill-opacity=".92"/>
+            <circle cx="-4.8" cy="-1.5" r="5.2" fill="var(--rose-deep)" fill-opacity=".92"/>
+            <circle cx="0" cy="0" r="3.1" fill="var(--gold-bright)"/>
+          </symbol>
+        </defs>
+        <path class="branch" id="trunk" stroke-width="9" d="M240,598 C238,540 246,500 236,460 C228,430 244,410 238,378"/>
+        <path class="branch" id="b1" stroke-width="4.5" d="M238,378 C190,350 130,330 90,270 C70,240 65,200 78,165"/>
+        <path class="branch" id="b2" stroke-width="5" d="M238,378 C210,340 175,300 150,240 C138,210 140,175 158,138"/>
+        <path class="branch" id="b3" stroke-width="5" d="M238,378 C265,340 300,300 325,240 C338,210 335,175 318,138"/>
+        <path class="branch" id="b4" stroke-width="4.5" d="M238,378 C285,350 345,330 385,270 C405,240 410,200 398,165"/>
+        <path class="branch" id="b5" stroke-width="5" d="M238,378 C236,330 240,280 238,220 C237,190 245,160 240,118"/>
+        <g id="leavesGroup"></g>
+        <g id="rosesGroup"></g>
+      </svg>
+    </div>
+    <div class="counter-row" id="counterRow"></div>
+    <button class="open-btn" id="openBtn">افتحي المفاجأة</button>
+  </div>
+</div>
+
+<!-- ================= ROSE TRANSITION ================= -->
+<div class="rose-fill" id="roseFill"></div>
+<div class="rose-half" id="roseLeft"></div>
+<div class="rose-half" id="roseRight"></div>
+
+<!-- ================= SCREEN 4: GALLERY ================= -->
+<div class="screen scroll" id="gallery">
+  <div class="clock" id="liveClock"></div>
+  <button class="back-btn" id="backBtn" aria-label="رجوع">
+    <svg viewBox="0 0 24 24"><use href="#icon-back"></use></svg>
+  </button>
+  <div class="g-header">
+    <div class="eyebrow">صفحتنا</div>
+    <h2>احنا واغنيتنا وصورنا</h2>
+  </div>
+
+  <div class="song-card">
+    <button class="song-btn" id="songBtn">
+      <span class="play-ico"></span>
+      <span class="pause-ico"><span></span><span></span><span></span></span>
+    </button>
+    <div class="song-info">
+      <div class="t1" id="songTitle">اضغطي عشان تضيفي أغنيتنا</div>
+      <div class="t2" id="songSub">MP3 من جهازك</div>
+    </div>
+    <div class="eq" id="eqBars" style="display:none;"><span></span><span></span><span></span></div>
+    <input type="file" id="songInput" accept="audio/*" style="display:none;">
+    <audio id="audioEl"></audio>
+  </div>
+
+  <div class="frames-grid" id="framesGrid"></div>
+  <button class="add-frame" id="addFrameBtn">+ إضافة برواز</button>
+
+  <div class="bday-row">
+    <div class="bday-card">
+      <div class="who">عيد ميلاد حبيبتي</div>
+      <div class="date">25 يناير</div>
+      <div class="cd" id="cdHer"></div>
+      <div class="turn" id="turnHer"></div>
+    </div>
+    <div class="bday-card">
+      <div class="who">عيد ميلادي</div>
+      <div class="date">12 مايو</div>
+      <div class="cd" id="cdHim"></div>
+      <div class="turn" id="turnHim"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- helpers ---------------- */
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2,'0');
+  function toEnglishDigits(s){
+    return s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  }
+
+  /* ---------------- firebase (shared photos + song) ---------------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDy1Du7kpNUWk3GVRN5oj0lOEPMFkS-yCs",
+    authDomain: "love-tree-995c4.firebaseapp.com",
+    projectId: "love-tree-995c4",
+    storageBucket: "love-tree-995c4.firebasestorage.app",
+    messagingSenderId: "189456342393",
+    appId: "1:189456342393:web:ed0af5a5d1b86cf70123a8",
+    measurementId: "G-HETWQVG37E"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  /* ---------------- cloudinary (shared photos + song uploads) ---------------- */
+  const CLOUDINARY_CLOUD = 'm1okim33';
+  const CLOUDINARY_PRESET = 'love_tree';
+  function uploadToCloudinary(file){
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', CLOUDINARY_PRESET);
+    return fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`, {
+      method:'POST', body: form
+    }).then(res=>{
+      if(!res.ok) throw new Error('cloudinary upload failed: ' + res.status);
+      return res.json();
+    }).then(data => data.secure_url);
+  }
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $(id).classList.add('active');
+  }
+  $('backBtn').addEventListener('click', ()=> showScreen('treeScreen'));
+
+  /* ---------------- ambient fx: stars / hearts / glow orbs ---------------- */
+  (function initAmbient(){
+    const box = $('pwAmbient');
+    if(!box) return;
+    const frag = document.createDocumentFragment();
+
+    const orbSpecs = [
+      { top:'8%',  left:'12%', size:220, color:'rgba(240,217,168,.28)', dur:'9s'  },
+      { top:'62%', left:'78%', size:260, color:'rgba(201,128,152,.26)', dur:'11s' },
+      { top:'75%', left:'18%', size:180, color:'rgba(156,79,102,.22)',  dur:'8s'  }
+    ];
+    orbSpecs.forEach(o=>{
+      const el = document.createElement('div');
+      el.className='glow-orb';
+      el.style.top=o.top; el.style.left=o.left;
+      el.style.width=o.size+'px'; el.style.height=o.size+'px';
+      el.style.background = `radial-gradient(circle, ${o.color}, transparent 70%)`;
+      el.style.animationDuration = o.dur;
+      frag.appendChild(el);
+    });
+
+    for(let i=0;i<46;i++){
+      const s = document.createElement('div');
+      s.className='pw-star';
+      s.style.left = (Math.random()*100)+'%';
+      s.style.top = (Math.random()*100)+'%';
+      s.style.animationDuration = (1.6+Math.random()*2.2)+'s';
+      s.style.animationDelay = (Math.random()*2.4)+'s';
+      frag.appendChild(s);
+    }
+
+    for(let i=0;i<12;i++){
+      const h = document.createElement('div');
+      h.className='pw-heart';
+      h.style.left = (Math.random()*90+4)+'%';
+      h.style.setProperty('--hw', (9+Math.random()*10)+'px');
+      h.style.animationDuration = (7+Math.random()*8)+'s';
+      h.style.animationDelay = (Math.random()*10)+'s';
+      frag.appendChild(h);
+    }
+
+    box.appendChild(frag);
+  })();
+
+  /* ---------------- SCREEN 1: password ---------------- */
+  const TARGET_DATE = [6,9,2026]; // day, month, year
+  const pwInput = $('pwInput');
+  const pwBtn = $('pwBtn');
+  const pwError = $('pwError');
+  const pwCard = document.querySelector('.pw-card');
+
+  function checkPassword(){
+    let raw = toEnglishDigits(pwInput.value.trim());
+    let parts = raw.split(/[\/\-\.\،, ]+/).filter(Boolean).map(n=>parseInt(n,10));
+    const ok = parts.length===3 && parts[0]===TARGET_DATE[0] && parts[1]===TARGET_DATE[1] && parts[2]===TARGET_DATE[2];
+    if(ok){
+      showScreen('treeScreen');
+      initTree();
+    } else {
+      pwError.classList.add('show');
+      pwCard.classList.remove('shake'); void pwCard.offsetWidth; pwCard.classList.add('shake');
+    }
+  }
+  pwBtn.addEventListener('click', checkPassword);
+  pwInput.addEventListener('keydown', e=>{ if(e.key==='Enter') checkPassword(); });
+
+  /* ---------------- SCREEN 3: tree ---------------- */
+  const START = new Date(2026,8,6,0,0,0); // 6 Sept 2026
+  let treeInited = false;
+
+  function diffBreakdown(start, now){
+    let y = now.getFullYear()-start.getFullYear();
+    let mo = now.getMonth()-start.getMonth();
+    let d = now.getDate()-start.getDate();
+    let h = now.getHours()-start.getHours();
+    let mi = now.getMinutes()-start.getMinutes();
+    let s = now.getSeconds()-start.getSeconds();
+    if(s<0){ s+=60; mi--; }
+    if(mi<0){ mi+=60; h--; }
+    if(h<0){ h+=24; d--; }
+    if(d<0){ const pm = new Date(now.getFullYear(), now.getMonth(), 0); d += pm.getDate(); mo--; }
+    if(mo<0){ mo+=12; y--; }
+    if(y<0){ y=0; mo=0; d=0; h=0; mi=0; s=0; }
+    return {y,mo,d,h,mi,s};
+  }
+
+  function buildCounterRow(b){
+    const units = [
+      [b.y,'سنة'], [b.mo,'شهر'], [b.d,'يوم'], [b.h,'ساعة'], [b.mi,'دقيقة'], [b.s,'ثانية']
+    ];
+    $('counterRow').innerHTML = units.map(u =>
+      `<div class="counter-unit"><span class="num">${u[0]}</span><span class="lbl">${u[1]}</span></div>`
+    ).join('');
+  }
+
+  const CANOPY_CX=240, CANOPY_CY=225, CANOPY_RX=168, CANOPY_RY=135;
+  const CAPACITY=160;
+  const GOLDEN=137.508*Math.PI/180;
+  let lastLeafCount=-1, lastRoseCount=-1;
+
+  function leafColor(pass){
+    const cols=['#8fae7a','#b7935b','#c98098','#8a7ab0'];
+    return cols[pass % cols.length];
+  }
+
+  function renderLeaves(count){
+    if(count===lastLeafCount) return;
+    lastLeafCount=count;
+    const g = $('leavesGroup');
+    g.innerHTML='';
+    const frag = document.createDocumentFragment();
+    for(let i=1;i<=count;i++){
+      const pass = Math.floor((i-1)/CAPACITY);
+      const idx = (i-1)%CAPACITY + 1;
+      const unitR = Math.sqrt(idx/CAPACITY);
+      const theta = i*GOLDEN;
+      const x = CANOPY_CX + unitR*Math.cos(theta)*CANOPY_RX;
+      const y = CANOPY_CY + unitR*Math.sin(theta)*CANOPY_RY*0.92 - unitR*10;
+      const scale = Math.max(0.55, 0.95 - pass*0.1);
+      const rot = (theta*180/Math.PI)%360;
+      const use = document.createElementNS('http://www.w3.org/2000/svg','use');
+      use.setAttribute('href','#leafShape');
+      use.setAttribute('width','14');
+      use.setAttribute('height','20');
+      use.setAttribute('x','-7');
+      use.setAttribute('y','-10');
+      use.setAttribute('fill', leafColor(pass));
+      use.setAttribute('fill-opacity', Math.max(0.55,0.95-pass*0.12));
+      use.setAttribute('transform', `translate(${x},${y}) rotate(${rot}) scale(${scale})`);
+      use.style.opacity='0';
+      use.style.animation = `leafIn .5s ease forwards`;
+      use.style.animationDelay = Math.min(i*10,1400)+'ms';
+      frag.appendChild(use);
+    }
+    g.appendChild(frag);
+  }
+
+  function renderRoses(count){
+    if(count===lastRoseCount) return;
+    lastRoseCount=count;
+    const g = $('rosesGroup');
+    g.innerHTML='';
+    const frag = document.createDocumentFragment();
+    for(let i=1;i<=count;i++){
+      const unitR = Math.sqrt(i/Math.max(count,6))*0.85;
+      const theta = i*GOLDEN + Math.PI/3;
+      const x = CANOPY_CX + unitR*Math.cos(theta)*CANOPY_RX;
+      const y = CANOPY_CY + unitR*Math.sin(theta)*CANOPY_RY*0.9 - unitR*14;
+      const use = document.createElementNS('http://www.w3.org/2000/svg','use');
+      use.setAttribute('href','#roseShape');
+      use.setAttribute('width','22');
+      use.setAttribute('height','22');
+      use.setAttribute('x','-11');
+      use.setAttribute('y','-11');
+      use.setAttribute('transform', `translate(${x},${y}) scale(1.5)`);
+      use.style.opacity='0';
+      use.style.filter='drop-shadow(0 0 4px rgba(156,79,102,.6))';
+      use.style.animation = `roseIn .6s cubic-bezier(.3,1.6,.4,1) forwards`;
+      use.style.animationDelay = (i*120)+'ms';
+      frag.appendChild(use);
+    }
+    g.appendChild(frag);
+  }
+
+  function drawBranches(){
+    ['trunk','b1','b2','b3','b4','b5'].forEach((id,i)=>{
+      const p = $(id);
+      const len = p.getTotalLength();
+      p.style.strokeDasharray = len;
+      p.style.strokeDashoffset = len;
+      p.style.transition='none';
+      requestAnimationFrame(()=>{
+        p.style.transition = 'stroke-dashoffset 1.1s ease';
+        p.style.transitionDelay = (i*180)+'ms';
+        p.style.strokeDashoffset = 0;
+      });
+    });
+  }
+
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    @keyframes leafIn{ from{ opacity:0; } to{ opacity:1; } }
+    @keyframes roseIn{ from{ opacity:0; transform-box:fill-box; } to{ opacity:1; } }
+  `;
+  document.head.appendChild(styleTag);
+
+  function tickTree(){
+    const now = new Date();
+    const b = diffBreakdown(START, now);
+    buildCounterRow(b);
+    const daysElapsed = Math.max(0, Math.floor((now-START)/86400000));
+    renderLeaves(daysElapsed);
+    renderRoses(Math.max(0,b.y));
+  }
+
+  function initTree(){
+    if(treeInited) return;
+    treeInited = true;
+    drawBranches();
+    setTimeout(()=>{ tickTree(); setInterval(tickTree, 1000); }, 900);
+  }
+
+  /* ---------------- rose transition ---------------- */
+  function buildRosePattern(){
+    const layers=[];
+    const seedRand = (function(){ let s=42; return ()=>{ s=(s*9301+49297)%233280; return s/233280; }; })();
+    const palette=['rgba(201,128,152,0.9)','rgba(156,79,102,0.85)','rgba(240,217,168,0.55)'];
+    for(let i=0;i<26;i++){
+      const cx = (seedRand()*100).toFixed(1);
+      const cy = (seedRand()*100).toFixed(1);
+      const size = 8+seedRand()*10;
+      const c1 = palette[i%3];
+      const c2 = palette[(i+1)%3];
+      layers.push(`radial-gradient(circle at ${cx}vw ${cy}vh, ${c1} 0%, ${c2} ${size*0.5}%, transparent ${size}%)`);
+    }
+    layers.push('radial-gradient(120% 120% at 50% 50%, #3a1c26 0%, #1b0e14 100%)');
+    return layers.join(',');
+  }
+
+  $('openBtn').addEventListener('click', ()=>{
+    const pattern = buildRosePattern();
+    const fill = $('roseFill'), left=$('roseLeft'), right=$('roseRight');
+    [fill,left,right].forEach(el=>{ el.style.backgroundImage = pattern; });
+    fill.classList.add('show');
+    setTimeout(()=>{
+      fill.style.transition='none';
+      fill.classList.remove('show');
+      showScreen('gallery');
+      initGallery();
+      requestAnimationFrame(()=>{
+        left.classList.add('split-left');
+        right.classList.add('split-right');
+      });
+      setTimeout(()=>{
+        left.classList.remove('split-left');
+        right.classList.remove('split-right');
+        left.style.transition='none'; right.style.transition='none';
+        left.style.backgroundImage=''; right.style.backgroundImage='';
+      }, 1050);
+    }, 1750);
+  });
+
+  /* ---------------- SCREEN 4: gallery ---------------- */
+  let galleryInited=false;
+  function initGallery(){
+    if(galleryInited) return;
+    galleryInited=true;
+
+    // clock
+    function tickClock(){
+      const n = new Date();
+      $('liveClock').textContent = n.toLocaleDateString('ar-EG') + ' — ' + pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+    }
+    tickClock(); setInterval(tickClock,1000);
+
+    // song (shared via Firebase)
+    const audio = $('audioEl'), songBtn=$('songBtn'), songInput=$('songInput'), eq=$('eqBars');
+    let songLoaded=false;
+
+    function applySongDoc(data){
+      if(data && data.url){
+        if(audio.src !== data.url){ audio.src = data.url; }
+        songLoaded = true;
+        $('songTitle').textContent = (data.name||'أغنيتنا').replace(/\.[^.]+$/,'');
+        $('songSub').textContent = 'أغنيتنا';
+      } else {
+        songLoaded = false;
+        $('songTitle').textContent = 'اضغطي عشان تضيفي أغنيتنا';
+        $('songSub').textContent = 'MP3 من جهازك';
+      }
+    }
+    db.collection('meta').doc('song').onSnapshot(
+      doc=> applySongDoc(doc.exists ? doc.data() : null),
+      err=> console.error('song sync error', err)
+    );
+
+    songBtn.addEventListener('click', ()=>{
+      if(!songLoaded){ songInput.click(); return; }
+      if(audio.paused){ audio.play().catch(()=>{}); } else { audio.pause(); }
+    });
+    songInput.addEventListener('change', ()=>{
+      const f = songInput.files[0];
+      if(!f) return;
+      $('songTitle').textContent = 'بترفع الأغنية…';
+      $('songSub').textContent = '';
+      uploadToCloudinary(f)
+        .then(url => db.collection('meta').doc('song').set({
+          url, name: f.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }))
+        .then(()=>{ audio.play().catch(()=>{}); })
+        .catch(err=>{
+          console.error('song upload failed', err);
+          $('songTitle').textContent = 'حصل خطأ في الرفع، جربي تاني';
+        });
+    });
+    const songCard = document.querySelector('.song-card');
+    audio.addEventListener('play', ()=>{ songBtn.classList.add('playing'); songCard.classList.add('playing'); eq.style.display='flex'; });
+    audio.addEventListener('pause', ()=>{ songBtn.classList.remove('playing'); songCard.classList.remove('playing'); eq.style.display='none'; });
+
+    // frames (shared via Firebase)
+    const grid = $('framesGrid');
+    const frameEls = new Map();
+    const FRAME_ICONS = ['icon-heart','icon-flower','icon-moon','icon-ribbon','icon-feather','icon-rings'];
+    const iconFor = order => FRAME_ICONS[(order||0) % FRAME_ICONS.length];
+    const emptyInner = order => `<svg class="frame-icon" viewBox="0 0 24 24"><use href="#${iconFor(order)}"></use></svg>`;
+
+    function enableTilt(el){
+      const strength = 9;
+      el.addEventListener('mousemove', e=>{
+        const r = el.getBoundingClientRect();
+        const px = (e.clientX - r.left)/r.width - 0.5;
+        const py = (e.clientY - r.top)/r.height - 0.5;
+        el.style.transform = `rotateX(${(-py*strength).toFixed(2)}deg) rotateY(${(px*strength).toFixed(2)}deg) translateY(-5px) scale(1.02)`;
+      });
+      el.addEventListener('mouseleave', ()=>{ el.style.transform=''; });
+    }
+
+    function makeFrameEl(id, data){
+      const wrap = document.createElement('div');
+      wrap.className='frame';
+      wrap._order = data.order || 0;
+      wrap.innerHTML = `<div class="photo${data.url ? ' has-photo' : ''}"><div class="inner">${data.url ? `<img src="${data.url}" alt="">` : emptyInner(data.order)}</div><button class="clear-photo" type="button" aria-label="حذف الصورة">×</button></div><input type="text" placeholder="لحظة حلوة..." maxlength="40" value="${(data.caption||'').replace(/"/g,'&quot;')}"><button class="del-frame" type="button" aria-label="حذف البرواز"><svg viewBox="0 0 24 24"><use href="#icon-trash"></use></svg></button>`;
+      enableTilt(wrap);
+      const photo = wrap.querySelector('.photo');
+      const clearBtn = wrap.querySelector('.clear-photo');
+      const delBtn = wrap.querySelector('.del-frame');
+      clearBtn.addEventListener('click', e=>{
+        e.stopPropagation();
+        db.collection('frames').doc(id).update({ url: null }).catch(()=>{});
+      });
+      delBtn.addEventListener('click', e=>{
+        e.stopPropagation();
+        if(confirm('تحذفي البرواز ده خالص؟')){
+          db.collection('frames').doc(id).delete().catch(()=>{});
+        }
+      });
+      const fileInput = document.createElement('input');
+      fileInput.type='file'; fileInput.accept='image/*'; fileInput.style.display='none';
+      wrap.appendChild(fileInput);
+      photo.addEventListener('click', ()=> fileInput.click());
+      fileInput.addEventListener('change', ()=>{
+        const f = fileInput.files[0];
+        if(!f) return;
+        photo.style.opacity='.4';
+        uploadToCloudinary(f)
+          .then(url => db.collection('frames').doc(id).update({ url }))
+          .catch(err=>{ console.error('frame upload failed', err); photo.style.opacity='1'; });
+      });
+      const textInput = wrap.querySelector('input[type=text]');
+      textInput.addEventListener('click', e=>e.stopPropagation());
+      let capTimer=null;
+      textInput.addEventListener('input', ()=>{
+        clearTimeout(capTimer);
+        capTimer = setTimeout(()=>{
+          db.collection('frames').doc(id).update({ caption: textInput.value }).catch(()=>{});
+        }, 500);
+      });
+      return wrap;
+    }
+
+    function updateFrameEl(el, data){
+      el._order = data.order || 0;
+      const photo = el.querySelector('.photo');
+      const inner = photo.querySelector('.inner');
+      const curImg = inner.querySelector('img');
+      photo.style.opacity='1';
+      photo.classList.toggle('has-photo', !!data.url);
+      if(data.url){
+        if(!curImg || curImg.getAttribute('src') !== data.url){
+          inner.innerHTML = `<img src="${data.url}" alt="">`;
+        }
+      } else if(curImg){
+        inner.innerHTML = emptyInner(data.order);
+      }
+      const textInput = el.querySelector('input[type=text]');
+      if(document.activeElement !== textInput && textInput.value !== (data.caption||'')){
+        textInput.value = data.caption || '';
+      }
+    }
+
+    function reorderGrid(){
+      [...frameEls.values()]
+        .sort((a,b)=> (a._order||0) - (b._order||0))
+        .forEach(el => grid.appendChild(el));
+    }
+
+    let bootstrapping = false;
+    db.collection('frames').orderBy('order').onSnapshot(snap=>{
+      if(snap.empty){
+        if(bootstrapping) return;
+        bootstrapping = true;
+        const batch = db.batch();
+        for(let i=0;i<6;i++){
+          const ref = db.collection('frames').doc();
+          batch.set(ref, { order:i, url:null, caption:'' });
+        }
+        batch.commit().catch(err=>console.error('bootstrap frames failed', err));
+        return;
+      }
+      snap.docChanges().forEach(change=>{
+        const id = change.doc.id;
+        if(change.type==='removed'){
+          const el = frameEls.get(id);
+          if(el){ el.remove(); frameEls.delete(id); }
+          return;
+        }
+        const data = change.doc.data();
+        let el = frameEls.get(id);
+        if(!el){
+          el = makeFrameEl(id, data);
+          frameEls.set(id, el);
+          grid.appendChild(el);
+        } else {
+          updateFrameEl(el, data);
+        }
+      });
+      reorderGrid();
+    }, err=> console.error('frames sync error', err));
+
+    $('addFrameBtn').addEventListener('click', async ()=>{
+      try{
+        const snap = await db.collection('frames').orderBy('order','desc').limit(1).get();
+        const nextOrder = snap.empty ? 0 : (snap.docs[0].data().order + 1);
+        await db.collection('frames').add({ order: nextOrder, url:null, caption:'' });
+      }catch(err){ console.error('add frame failed', err); }
+    });
+
+    // birthdays
+    function totalBreak(ms){
+      ms = Math.max(0, ms);
+      const ts = Math.floor(ms/1000);
+      return { d:Math.floor(ts/86400), h:Math.floor((ts%86400)/3600), mi:Math.floor((ts%3600)/60), s:ts%60 };
+    }
+    function nextOcc(month, day, now){
+      let y = now.getFullYear();
+      let d = new Date(y, month, day, 0,0,0);
+      if(d < now){ d = new Date(y+1, month, day, 0,0,0); }
+      return d;
+    }
+    function renderCd(elId, target, now){
+      const b = totalBreak(target-now);
+      $(elId).innerHTML = `
+        <div><span class="n">${b.d}</span><span class="l">يوم</span></div>
+        <div><span class="n">${pad(b.h)}</span><span class="l">ساعة</span></div>
+        <div><span class="n">${pad(b.mi)}</span><span class="l">دقيقة</span></div>
+        <div><span class="n">${pad(b.s)}</span><span class="l">ثانية</span></div>`;
+    }
+    function tickBdays(){
+      const now = new Date();
+      const her = nextOcc(0,25,now);
+      const him = nextOcc(4,12,now);
+      renderCd('cdHer', her, now);
+      renderCd('cdHim', him, now);
+      $('turnHer').textContent = 'هتكمل ' + (her.getFullYear()-2009) + ' سنة';
+      $('turnHim').textContent = 'هكمل ' + (him.getFullYear()-2007) + ' سنة';
+    }
+    tickBdays(); setInterval(tickBdays,1000);
+  }
+
+})();
+</script>
+</body>
+</html>
